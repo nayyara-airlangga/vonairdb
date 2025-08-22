@@ -50,3 +50,49 @@ func (p *Page) SetInt(offset Offset, val Int) {
 
 	binary.BigEndian.PutUint32(p.buf[from:to], uint32(val))
 }
+
+// Gets an array of bytes from an offset in the page. The first 4 bytes stores
+// the length of bytes to fetch
+func (p Page) GetBytes(offset Offset) []byte {
+	length := p.GetInt(offset)
+
+	return p.buf[offset+IntOffset : length]
+}
+
+// Sets an array of bytes starting from an offset in the page. The first 4 bytes are reserved for the length of the bytes. Bytes are stored in big endian format
+func (p *Page) SetBytes(offset Offset, b []byte) {
+	length := Int(len(b))
+	from := offset
+	to := offset + IntOffset + Offset(length)
+
+	runtime.Assert(to <= Offset(PageSize8K), "SetBytes offset out of bounds (from: %d, to: %d)", from, to)
+
+	p.SetInt(offset, length)
+
+	copy(p.buf[from+IntOffset:to], b)
+}
+
+// Gets a string from an offset in the page. The first 4 bytes stores the length of the string. Strings are UTF-8 encoded
+func (p Page) GetString(offset Offset) string {
+	b := p.GetBytes(offset)
+
+	return string(b)
+}
+
+// Sets a string starting from an offset in the page. The first 4 bytes are reserved for the length of the string as bytes. Strings are UTF-8 encoded and the bytes are stored in big endian format
+func (p *Page) SetString(offset Offset, s string) {
+	b := []byte(s)
+
+	p.SetBytes(offset, b)
+}
+
+// Retuns the maximum amount of bytes needed to store a string. For now, assume
+// all strings are UTF-8 encoded where the maximum bytes to store one character is 4 bytes
+func (p Page) MaxStrLen(strlen Int) Int {
+	return Int(IntOffset) + 4*strlen
+}
+
+// Returns all the contents of a page
+func (p Page) Contents() []byte {
+	return p.buf[:]
+}

@@ -18,7 +18,10 @@ const (
 	IntOffset Offset = 4
 )
 
-type Int uint32
+type (
+	Int  uint32
+	Long uint64
+)
 
 // A database page with a fixed size of 8KB
 type Page struct {
@@ -55,8 +58,10 @@ func (p *Page) SetInt(offset Offset, val Int) {
 // the length of bytes to fetch
 func (p Page) GetBytes(offset Offset) []byte {
 	length := p.GetInt(offset)
+	from := offset + IntOffset
+	to := from + Offset(length)
 
-	return p.buf[offset+IntOffset : length]
+	return p.buf[from:to]
 }
 
 // Sets an array of bytes starting from an offset in the page. The first 4 bytes are reserved for the length of the bytes. Bytes are stored in big endian format
@@ -92,7 +97,7 @@ func (p Page) MaxStrLen(strlen Int) Int {
 	return Int(IntOffset) + 4*strlen
 }
 
-// Returns all the contents of a page
-func (p Page) Contents() []byte {
+// Returns all the contents of a page as a reference for writing/reading
+func (p *Page) Contents() []byte {
 	return p.buf[:]
 }

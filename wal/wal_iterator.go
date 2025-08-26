@@ -33,6 +33,8 @@ func newWalIterator(fm *file.FileManager, block storage.Block) *WalIterator {
 		page:  page,
 	}
 
+	it.moveToBlock(block)
+
 	return it
 }
 
